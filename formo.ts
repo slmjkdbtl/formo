@@ -114,6 +114,7 @@ const formTable = db.table("formdata", columns, {
 	timeUpdated: true,
 })
 
+// TODO: have a uniform default style
 const styles = {
 	"*": {
 		"box-sizing": "border-box",
@@ -142,6 +143,10 @@ const styles = {
 	"input[type=checkbox]": {
 		"width": "24px",
 		"height": "24px",
+	},
+	"input[type=color]": {
+		"width": "120px",
+		"height": "48px",
 	},
 	"textarea": {
 		"padding": "8px",
