@@ -1,4 +1,3 @@
-import * as fs from "fs/promises"
 import * as crypto from "crypto"
 
 import {
@@ -15,6 +14,7 @@ import {
 import type {
 	ColumnType,
 	TableSchema,
+	HTMLChild,
 } from "./www"
 
 type Config = {
@@ -141,12 +141,11 @@ const blobTable = db.table<DBBlob>("blob", {
 })
 
 // TODO: have a uniform default style
-const styles = {
+const theme = {
 	"*": {
 		"box-sizing": "border-box",
 		"margin": "0",
 		"padding": "0",
-		"font-size": "24px",
 		"font-family": "Monospace",
 	},
 	"html": {
@@ -156,12 +155,6 @@ const styles = {
 	"body": {
 		"width": "100%",
 		"height": "100%",
-		"padding": "32px",
-	},
-	"main": {
-		"max-width": "640px",
-		"width": "100%",
-		"margin": "0 auto",
 	},
 	"input": {
 		"padding": "8px",
@@ -185,100 +178,137 @@ const styles = {
 		"border": "solid 1px #767676",
 		"border-radius": "2px",
 	},
+	"table": {
+		"border-collapse": "collapse",
+	},
+	"th,td": {
+		"border": "1px solid black",
+		"padding": "4px",
+	},
+}
+
+function page(head: HTMLChild[], body: HTMLChild[]) {
+	return "<!DOCTYPE html>" + h("html", {}, [
+		h("head", {}, [
+			h("style", {}, css(theme)),
+			h("style", {}, csslib()),
+			...head,
+		]),
+		h("body", {}, [
+			...body,
+		]),
+	])
 }
 
 server.use(route("GET", "/", ({ req, res }) => {
-	return res.sendHTML("<!DOCTYPE html>" + h("html", {}, [
-		h("head", {}, [
-			cfg.title ? h("title", {}, cfg.title) : null,
-			cfg.description ? h("meta", { name: "description", content: cfg.description, }) : null,
-			h("meta", { name: "viewport", content: "width=device-width, initial-scale=1" }),
-			cfg.icon ? h("link", { rel: "icon", href: cfg.icon }) : null,
-			h("style", {}, csslib()),
-			h("style", {}, css(styles)),
-		]),
-		h("body", {}, [
-			h("main", {}, [
-				h("form", {
-					method: "post",
-					action: "/submit",
-					enctype: "multipart/form-data",
-					class: "vstack g16",
-				}, [
-					...cfg.fields.map((f) => {
-						const name = fixName(f.name ?? f.prompt)
-						const el = (() => {
-							switch (f.type) {
-								case "textarea":
-									return h("textarea", {
-										name: name,
-										required: f.required,
-										placeholder: f.placeholder,
-									}, f.value ?? "")
-								case "select":
-									return h("select", { name: name }, f.options.map((o) => {
-										return h("option", {}, o)
-									}))
-								case "text":
-								case "email":
-								case "text":
-								case "url":
-								case "password":
-									return h("input", {
-										name: name,
-										type: "text",
-										value: f.value,
-										placeholder: f.placeholder,
-										minlength: f.minlength,
-										maxlength: f.maxlength,
-										pattern: f.pattern,
-									})
-								case "range":
-									return h("input", {
-										name: name,
-										type: "range",
-										value: f.value,
-										min: f.min,
-										max: f.max,
-										step: f.step,
-									})
-								case "number":
-									return h("input", {
-										name: name,
-										type: "number",
-										value: f.value,
-										min: f.min,
-										max: f.max,
-									})
-								case "checkbox":
-									return h("input", {
-										name: name,
-										type: "checkbox",
-										checked: f.checked,
-									})
-								case "date":
-								case "time":
-								case "color":
-									return h("input", {
-										name: name,
-										type: f.type,
-										value: f.value,
-									})
-								case "file":
-									return h("input", {
-										name: name,
-										type: f.type,
-										accept: f.accept,
-									})
-							}
-						})()
-						return h("label", { class: "vstack g8" }, [
+	return res.sendHTML(page([
+		cfg.title ? h("title", {}, cfg.title) : null,
+		cfg.description ? h("meta", { name: "description", content: cfg.description, }) : null,
+		h("meta", { name: "viewport", content: "width=device-width, initial-scale=1" }),
+		cfg.icon ? h("link", { rel: "icon", href: cfg.icon }) : null,
+		h("style", {}, css({
+			"*": {
+				"font-size": "24px",
+			},
+			"body": {
+				"padding": "32px",
+			},
+			"main": {
+				"max-width": "640px",
+				"width": "100%",
+				"margin": "0 auto",
+			},
+		})),
+	], [
+		h("main", {}, [
+			h("form", {
+				method: "post",
+				action: "/submit",
+				enctype: "multipart/form-data",
+				class: "vstack g16",
+			}, [
+				...cfg.fields.map((f) => {
+					const name = fixName(f.name ?? f.prompt)
+					const el = (() => {
+						switch (f.type) {
+							case "textarea":
+								return h("textarea", {
+									name: name,
+									required: f.required,
+									placeholder: f.placeholder,
+								}, f.value ?? "")
+							case "select":
+								return h("select", { name: name }, f.options.map((o) => {
+									return h("option", {}, o)
+								}))
+							case "text":
+							case "email":
+							case "text":
+							case "url":
+							case "password":
+								return h("input", {
+									name: name,
+									type: "text",
+									value: f.value,
+									placeholder: f.placeholder,
+									minlength: f.minlength,
+									maxlength: f.maxlength,
+									pattern: f.pattern,
+								})
+							case "range":
+								return h("input", {
+									name: name,
+									type: "range",
+									value: f.value,
+									min: f.min,
+									max: f.max,
+									step: f.step,
+								})
+							case "number":
+								return h("input", {
+									name: name,
+									type: "number",
+									value: f.value,
+									min: f.min,
+									max: f.max,
+								})
+							case "checkbox":
+								return h("input", {
+									name: name,
+									type: "checkbox",
+									checked: f.checked,
+								})
+							case "date":
+							case "time":
+							case "color":
+								return h("input", {
+									name: name,
+									type: f.type,
+									value: f.value,
+								})
+							case "file":
+								return h("input", {
+									name: name,
+									type: f.type,
+									accept: f.accept,
+								})
+						}
+					})()
+					return h("label", { class: "vstack g8" }, [
+						h("span", { class: "hstack g8 align-center" }, [
+							f.required
+								? h("span", {
+									style: {
+										color: "red",
+									},
+								}, "*")
+								: null,
 							f.prompt,
-							el,
-						])
-					}),
-					h("input", { type: "submit" }),
-				]),
+						]),
+						el,
+					])
+				}),
+				h("input", { type: "submit" }),
 			]),
 		]),
 	]))
@@ -315,4 +345,57 @@ server.use(route("POST", "/submit", async ({ req, res }) => {
 	}
 	formTable.insert(json)
 	return res.sendText("Success!")
+}))
+
+// TODO: auth
+server.use(route("GET", "/data", async ({ req, res }) => {
+	const rows = formTable.select()
+	return res.sendHTML(page([
+		cfg.title ? h("title", {}, cfg.title) : null,
+		cfg.description ? h("meta", { name: "description", content: cfg.description, }) : null,
+		h("meta", { name: "viewport", content: "width=device-width, initial-scale=1" }),
+		cfg.icon ? h("link", { rel: "icon", href: cfg.icon }) : null,
+		h("style", {}, css({
+			"*": {
+				"font-size": "12px",
+			},
+			"body": {
+				"padding": "12px",
+			},
+			"table": {
+				"width": "100%",
+			},
+		})),
+	], [
+		h("table", {}, [
+			h("tr", {}, [
+				h("th", {}, "#"),
+				...cfg.fields.map((f) => {
+					return h("th", {}, fixName(f.name ?? f.prompt))
+				}),
+			]),
+			...rows.map((r) => {
+				return h("tr", {}, [
+					h("td", {}, r.id),
+					...cfg.fields.map((f) => {
+						const k = fixName(f.name ?? f.prompt)
+						if (f.type === "file") {
+							return h("td", {}, r[k] ? [
+								h("a", { href: `/blob/${r[k]}` }, "view"),
+							] : "")
+						} else {
+							return h("td", {}, r[k])
+						}
+					}),
+				])
+			}),
+		]),
+	]))
+}))
+
+server.use(route("GET", "/blob/:id", async ({ req, res, next }) => {
+	const id = req.params["id"]
+	const img = blobTable.find({ "id": id })
+	if (!img) return next()
+	return res.send(new Blob([img.data], { type: img.type }))
 }))

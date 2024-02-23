@@ -319,6 +319,7 @@ export function createServer(opts: ServerOpts = {}): Server {
 	const handlers: Handler[] = []
 	const use = (handler: Handler) => handlers.push(handler)
 	let errHandler: ErrorHandler = ({ req, res, next }, err) => {
+		// TODO: async error doesn't send response in dev mode
 		if (isDev) throw err
 		console.error(err)
 		res.status = 500
@@ -1233,13 +1234,14 @@ export async function getFormBlobData(form: FormData, key: string) {
 	}
 }
 
-type HTMLChildren = string | number | undefined | null
+export type HTMLChild = string | number | undefined | null
+export type HTMLChildren = HTMLChild | HTMLChild[]
 
 // html text builder
 export function h(
 	tag: string,
 	attrs: Record<string, any>,
-	children?: HTMLChildren | HTMLChildren[]
+	children?: HTMLChildren
 ) {
 
 	let html = `<${tag}`
