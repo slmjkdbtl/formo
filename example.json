@@ -1,0 +1,62 @@
+{
+	"title": "Survey",
+	"description": "a simple survey",
+	"fields": [
+		{
+			"prompt": "What's your name?",
+			"name": "name",
+			"type": "text",
+			"required": true
+		},
+		{
+			"prompt": "What's your power level?",
+			"name": "power",
+			"type": "range",
+			"min": 0,
+			"max": 100,
+			"required": true
+		},
+		{
+			"prompt": "Are you alive?",
+			"name": "alive",
+			"type": "checkbox",
+			"checked": true
+		},
+		{
+			"prompt": "Date of birth",
+			"name": "date_of_birth",
+			"type": "date"
+		},
+		{
+			"prompt": "What time is it?",
+			"name": "time",
+			"type": "time"
+		},
+		{
+			"prompt": "Email Address",
+			"name": "email",
+			"type": "email"
+		},
+		{
+			"prompt": "Favorite color",
+			"name": "color",
+			"type": "color"
+		},
+		{
+			"prompt": "Favorite city",
+			"name": "city",
+			"type": "select",
+			"options": [
+				"Beijing",
+				"Shanghai",
+				"Chengdu",
+				"Brooklyn"
+			]
+		},
+		{
+			"prompt": "Tell us about yourself",
+			"name": "desc",
+			"type": "textarea"
+		}
+	]
+}

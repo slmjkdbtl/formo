@@ -1,0 +1,7 @@
+.DS_Store
+.env
+*.bun-build
+*.sqlite
+node_modules/
+data/
+build/
