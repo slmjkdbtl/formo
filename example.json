@@ -57,6 +57,12 @@
 			"prompt": "Tell us about yourself",
 			"name": "desc",
 			"type": "textarea"
+		},
+		{
+			"prompt": "Your picture",
+			"name": "picture",
+			"type": "file",
+			"accept": "image/png, image/gif, image/jpeg"
 		}
 	]
 }

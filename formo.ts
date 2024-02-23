@@ -1,4 +1,5 @@
 import * as fs from "fs/promises"
+import * as crypto from "crypto"
 
 import {
 	createServer,
@@ -8,6 +9,7 @@ import {
 	css,
 	csslib,
 	formToJSON,
+	getFormBlob,
 } from "./www"
 
 import type {
@@ -71,13 +73,17 @@ type TypedField =
 		maxlength?: number,
 		pattern?: string,
 	}
+	| {
+		type: "file",
+		accept?: string,
+	}
 
 const cfg: Config = await Bun.file(process.argv[2]).json()
 
 const server = createServer({ port: Bun.env["PORT"] ?? 80 })
 console.log(`starting server on ${server.url.toString()}`)
 
-const db = createDatabase(cfg.dbfile ?? "formo.sqlite")
+const db = createDatabase(cfg.dbfile ?? "data.sqlite")
 
 const columns: TableSchema = {
 	"id": { type: "INTEGER", primaryKey: true, autoIncrement: true },
@@ -106,10 +112,30 @@ for (const field of cfg.fields) {
 	const name = fixName(field.name ?? field.prompt)
 	columns[name] = {
 		type: fieldTypeToDBType(field.type),
+		// TODO
+		allowNull: true,
+	}
+	if (field.type === "file") {
+		columns[name].reference = { table: "blob", column: "id" }
 	}
 }
 
 const formTable = db.table("formdata", columns, {
+	timeCreated: true,
+	timeUpdated: true,
+})
+
+type DBBlob = {
+	id: string,
+	data: Uint8Array,
+	type: string,
+}
+
+const blobTable = db.table<DBBlob>("blob", {
+	"id":   { type: "TEXT", primaryKey: true },
+	"data": { type: "BLOB" },
+	"type": { type: "TEXT" },
+}, {
 	timeCreated: true,
 	timeUpdated: true,
 })
@@ -173,7 +199,12 @@ server.use(route("GET", "/", ({ req, res }) => {
 		]),
 		h("body", {}, [
 			h("main", {}, [
-				h("form", { method: "post", action: "/submit", class: "vstack g16" }, [
+				h("form", {
+					method: "post",
+					action: "/submit",
+					enctype: "multipart/form-data",
+					class: "vstack g16",
+				}, [
 					...cfg.fields.map((f) => {
 						const name = fixName(f.name ?? f.prompt)
 						const el = (() => {
@@ -233,6 +264,12 @@ server.use(route("GET", "/", ({ req, res }) => {
 										type: f.type,
 										value: f.value,
 									})
+								case "file":
+									return h("input", {
+										name: name,
+										type: f.type,
+										accept: f.accept,
+									})
 							}
 						})()
 						return h("label", { class: "vstack g8" }, [
@@ -251,11 +288,30 @@ const boolFields = cfg.fields
 	.filter((f) => f.type === "checkbox")
 	.map((f) => fixName(f.name ?? f.prompt))
 
+const blobFields = cfg.fields
+	.filter((f) => f.type === "file")
+	.map((f) => fixName(f.name ?? f.prompt))
+
 server.use(route("POST", "/submit", async ({ req, res }) => {
 	const form = await req.formData()
 	const json = formToJSON(form)
 	for (const f of boolFields) {
 		json[f] = Boolean(json[f])
+	}
+	for (const f of blobFields) {
+		const id = crypto.randomUUID()
+		const blob = getFormBlob(form, f)
+		if (!blob) {
+			delete json[f]
+			continue
+		}
+		const data = new Uint8Array(await blob.arrayBuffer())
+		blobTable.insert({
+			"id": id,
+			"data": data,
+			"type": blob.type,
+		})
+		json[f] = id
 	}
 	formTable.insert(json)
 	return res.sendText("Success!")
