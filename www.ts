@@ -1234,6 +1234,24 @@ export async function getFormBlobData(form: FormData, key: string) {
 	}
 }
 
+export function getBasicAuth(req: Req): [string, string] | void {
+	const auth = req.headers.get("Authorization")
+	if (!auth) return
+	const [ scheme, cred ] = auth.split(" ")
+	if (scheme.toLowerCase() !== "basic") return
+	if (!cred) return
+	const [ user, pass ] = atob(cred).split(":")
+	return [ user, pass ]
+}
+
+export function getBearerAuth(req: Req): string | void {
+	const auth = req.headers.get("Authorization")
+	if (!auth) return
+	const [ scheme, cred ] = auth.split(" ")
+	if (scheme.toLowerCase() !== "bearer") return
+	return cred
+}
+
 export type HTMLChild = string | number | undefined | null
 export type HTMLChildren = HTMLChild | HTMLChild[]
 

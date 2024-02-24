@@ -1,6 +1,8 @@
 {
 	"title": "Survey",
 	"description": "a simple survey",
+	"username": "admin",
+	"password": "admin",
 	"fields": [
 		{
 			"prompt": "What's your name?",

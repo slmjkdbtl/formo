@@ -1,10 +1,6 @@
 a simple form service
 
-1. build
-
-  $ make build
-
-2. create a config json file
+1. create a json file to define the form
 
   {
     "title": "My Survey",
@@ -27,8 +23,8 @@ a simple form service
 
   check out example.json for full example or type defs in formo.ts
 
-3. start the server
+2. start the server
 
-  $ ./build/formo myform.json
+  $ bun formo.ts -- myform.json
 
-4. data will be saved to data.sqlite (or specified otherwise in config json)
+3. data will be saved to data.sqlite (or specified otherwise in config json)

@@ -5,3 +5,8 @@ dev:
 .PHONY: build
 build:
 	bun build formo.ts --compile --outfile build/formo
+
+.PHONY: clean
+clean:
+	rm -rf .*.bun-build
+	rm -rf *.tsbuildinfo

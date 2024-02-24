@@ -9,12 +9,14 @@ import {
 	csslib,
 	formToJSON,
 	getFormBlob,
+	getBasicAuth,
 } from "./www"
 
 import type {
 	ColumnType,
 	TableSchema,
 	HTMLChild,
+	Req,
 } from "./www"
 
 type Config = {
@@ -24,6 +26,8 @@ type Config = {
 	icon?: string,
 	css?: string,
 	dbfile?: string,
+	username?: string,
+	password?: string,
 }
 
 type Field = {
@@ -148,20 +152,12 @@ const theme = {
 		"padding": "0",
 		"font-family": "Monospace",
 	},
-	"html": {
-		"width": "100%",
-		"height": "100%",
-	},
-	"body": {
-		"width": "100%",
-		"height": "100%",
-	},
 	"input": {
 		"padding": "8px",
 	},
 	"input[type=checkbox]": {
-		"width": "24px",
-		"height": "24px",
+		"width": "32px",
+		"height": "32px",
 	},
 	"input[type=color]": {
 		"width": "120px",
@@ -200,6 +196,12 @@ function page(head: HTMLChild[], body: HTMLChild[]) {
 	])
 }
 
+server.use(route("GET", "/favicon.ico", ({ req, res, next }) => {
+	const f = Bun.file(cfg.icon ?? "favicon.ico")
+	if (f.size === 0) return next()
+	return res.send(f)
+}))
+
 server.use(route("GET", "/", ({ req, res }) => {
 	return res.sendHTML(page([
 		cfg.title ? h("title", {}, cfg.title) : null,
@@ -225,7 +227,7 @@ server.use(route("GET", "/", ({ req, res }) => {
 				method: "post",
 				action: "/submit",
 				enctype: "multipart/form-data",
-				class: "vstack g16",
+				class: "vstack g32",
 			}, [
 				...cfg.fields.map((f) => {
 					const name = fixName(f.name ?? f.prompt)
@@ -347,8 +349,29 @@ server.use(route("POST", "/submit", async ({ req, res }) => {
 	return res.sendText("Success!")
 }))
 
-// TODO: auth
+function getCred(): [string, string] | void {
+	let username = cfg.username
+	let password = cfg.password
+	if (username?.startsWith("$")) username = Bun.env[username.substring(1)]
+	if (password?.startsWith("$")) password = Bun.env[password.substring(1)]
+	if (!username) return
+	if (!password) return
+	return [username, password]
+}
+
 server.use(route("GET", "/data", async ({ req, res }) => {
+	const cred = getCred()
+	if (cred) {
+		const auth = getBasicAuth(req)
+		if (!auth || auth[0] !== cred[0] || auth[1] !== cred[1]) {
+			return res.sendText("authentication failed", {
+				status: 401,
+				headers: {
+					"WWW-Authenticate": `Basic realm="Formo admin access"`,
+				},
+			})
+		}
+	}
 	const rows = formTable.select()
 	return res.sendHTML(page([
 		cfg.title ? h("title", {}, cfg.title) : null,
@@ -369,7 +392,7 @@ server.use(route("GET", "/data", async ({ req, res }) => {
 	], [
 		h("table", {}, [
 			h("tr", {}, [
-				h("th", {}, "#"),
+				h("th", {}, ""),
 				...cfg.fields.map((f) => {
 					return h("th", {}, fixName(f.name ?? f.prompt))
 				}),

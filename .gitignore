@@ -2,6 +2,8 @@
 .env
 *.bun-build
 *.sqlite
+*.db
+*.tsbuildinfo
 node_modules/
 data/
 build/
